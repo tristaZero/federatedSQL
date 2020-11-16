@@ -131,6 +131,4 @@
             <artifactId>calcite-core</artifactId>
         </dependency>
     </dependencies>
-
-
 </project>
