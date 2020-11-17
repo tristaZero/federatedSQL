@@ -1,9 +1,7 @@
 package federated.sql.schema;
 
 import com.google.common.collect.Maps;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.shardingsphere.infra.config.datasource.DataSourceParameter;
@@ -17,7 +15,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static federated.sql.LogicSchemaConstants.MYSQL_DRIVER;
+import static federated.sql.metadata.LogicSchemaConstants.MYSQL_DRIVER;
 
 /**
  * Logic schema.

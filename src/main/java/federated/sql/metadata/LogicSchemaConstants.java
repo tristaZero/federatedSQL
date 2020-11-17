@@ -1,4 +1,4 @@
-package federated.sql;
+package federated.sql.metadata;
 
 /**
  * Logic schema constants.

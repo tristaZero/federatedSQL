@@ -14,11 +14,11 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static federated.sql.LogicSchemaConstants.COMMA_SEPARATOR;
-import static federated.sql.LogicSchemaConstants.DATA_SOURCES;
-import static federated.sql.LogicSchemaConstants.DOT_SEPARATOR;
-import static federated.sql.LogicSchemaConstants.URL;
-import static federated.sql.LogicSchemaConstants.USER_NAME;
+import static federated.sql.metadata.LogicSchemaConstants.COMMA_SEPARATOR;
+import static federated.sql.metadata.LogicSchemaConstants.DATA_SOURCES;
+import static federated.sql.metadata.LogicSchemaConstants.DOT_SEPARATOR;
+import static federated.sql.metadata.LogicSchemaConstants.URL;
+import static federated.sql.metadata.LogicSchemaConstants.USER_NAME;
 
 
 /**
