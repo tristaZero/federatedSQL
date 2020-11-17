@@ -4,25 +4,19 @@ import com.google.common.collect.Lists;
 import lombok.Getter;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
-import org.apache.calcite.adapter.java.AbstractQueryableTable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.QueryProvider;
-import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
-import org.apache.calcite.schema.impl.AbstractTableQueryable;
+import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.SqlDialect;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -34,7 +28,7 @@ public class LogicTable extends AbstractTable implements TranslatableTable {
     private static final String MYSQL_COLUMN_META_SQL =
             "select COLUMN_NAME, DATA_TYPE from information_schema.columns where table_schema = ? and table_name = ?";
 
-    private com.yuqi.schema.mysql.MysqlReader mysqlReader;
+    private LogicRowsReaderImpl mysqlReader;
     private RelToSqlConverter relToSqlConverter;
     private String schema;
     private String tableName;
@@ -53,7 +47,6 @@ public class LogicTable extends AbstractTable implements TranslatableTable {
         relToSqlConverter = new RelToSqlConverter(SqlDialect.DatabaseProduct.MYSQL.getDialect());
     }
 
-    @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
 
         final TableScan relNode = new EnumerableTableScan(context.getCluster(),
@@ -62,13 +55,12 @@ public class LogicTable extends AbstractTable implements TranslatableTable {
 
         if (null == mysqlReader) {
             final String sql = relToSqlConverter.visit(relNode).asStatement().toString();
-            mysqlReader = new com.yuqi.schema.mysql.MySqlReaderImpl(sql, connection, this);
+            mysqlReader = new LogicRowsReaderImpl(sql, connection, this);
         }
 
         return relNode;
     }
 
-    @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
         //get meta data from mysql;
         if (null != relDataType) {
