@@ -25,8 +25,6 @@ import java.util.List;
  */
 public class LogicTable extends AbstractTable implements TranslatableTable {
     
-    
-
     private LogicTableScan mysqlReader;
     private RelToSqlConverter relToSqlConverter;
     private String schema;

@@ -20,7 +20,7 @@
         <commons-collections4.version>4.2</commons-collections4.version>
         <hikari-cp.version>3.4.2</hikari-cp.version>
         <calcite.version>1.26.0</calcite.version>
-        <shardingsphere.version>5.0.0-alpha</shardingsphere.version>
+        <shardingsphere.version>5.0.0-RC1-SNAPSHOT</shardingsphere.version>
     </properties>
 
     <dependencyManagement>
