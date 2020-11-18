@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @Builder
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class LogicRowsReaderImpl {
+public class LogicTableScan {
 
     @Setter
     @Getter

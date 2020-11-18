@@ -24,11 +24,10 @@ import java.util.List;
  *
  */
 public class LogicTable extends AbstractTable implements TranslatableTable {
+    
+    
 
-    private static final String MYSQL_COLUMN_META_SQL =
-            "select COLUMN_NAME, DATA_TYPE from information_schema.columns where table_schema = ? and table_name = ?";
-
-    private LogicRowsReaderImpl mysqlReader;
+    private LogicTableScan mysqlReader;
     private RelToSqlConverter relToSqlConverter;
     private String schema;
     private String tableName;
@@ -40,7 +39,6 @@ public class LogicTable extends AbstractTable implements TranslatableTable {
     private List<String> columnNames;
 
     public LogicTable(String schema, String tableName, Connection connection) {
-        super(Object[].class);
         this.schema = schema;
         this.tableName = tableName;
         this.connection = connection;
@@ -48,14 +46,13 @@ public class LogicTable extends AbstractTable implements TranslatableTable {
     }
 
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-
         final TableScan relNode = new EnumerableTableScan(context.getCluster(),
                 context.getCluster().traitSetOf(EnumerableConvention.INSTANCE),
-                relOptTable, (Class) getElementType());
+                relOptTable, Object[].class);
 
         if (null == mysqlReader) {
             final String sql = relToSqlConverter.visit(relNode).asStatement().toString();
-            mysqlReader = new LogicRowsReaderImpl(sql, connection, this);
+            mysqlReader = new LogicTableScan(sql, connection, this);
         }
 
         return relNode;

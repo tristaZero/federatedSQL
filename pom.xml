@@ -18,6 +18,7 @@
         <junit.version>4.12</junit.version>
         <mockito.version>2.7.21</mockito.version>
         <commons-collections4.version>4.2</commons-collections4.version>
+        <hikari-cp.version>3.4.2</hikari-cp.version>
         <calcite.version>1.26.0</calcite.version>
         <shardingsphere.version>5.0.0-alpha</shardingsphere.version>
     </properties>
@@ -59,6 +60,11 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
+                <groupId>com.zaxxer</groupId>
+                <artifactId>HikariCP</artifactId>
+                <version>${hikari-cp.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.calcite</groupId>
                 <artifactId>calcite-core</artifactId>
                 <version>${calcite.version}</version>
@@ -97,6 +103,11 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-inline</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.calcite</groupId>

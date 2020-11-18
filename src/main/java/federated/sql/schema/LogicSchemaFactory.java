@@ -1,10 +1,10 @@
 package federated.sql.schema;
 
 
+import federated.sql.metadata.DataSourceParameter;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.shardingsphere.infra.config.datasource.DataSourceParameter;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 
 import java.util.Arrays;
@@ -17,6 +17,7 @@ import java.util.Map.Entry;
 import static federated.sql.metadata.LogicSchemaConstants.COMMA_SEPARATOR;
 import static federated.sql.metadata.LogicSchemaConstants.DATA_SOURCES;
 import static federated.sql.metadata.LogicSchemaConstants.DOT_SEPARATOR;
+import static federated.sql.metadata.LogicSchemaConstants.PASSWORD;
 import static federated.sql.metadata.LogicSchemaConstants.URL;
 import static federated.sql.metadata.LogicSchemaConstants.USER_NAME;
 
@@ -51,8 +52,10 @@ public class LogicSchemaFactory implements SchemaFactory {
             dataSourceParameters.get(dataSourceName).setUrl(String.valueOf(operand.getValue()));
         } else if (USER_NAME.equals(parameters[2])) {
             dataSourceParameters.get(dataSourceName).setUsername(String.valueOf(operand.getValue()));
-        } else {
+        } else if (PASSWORD.equals(parameters[2])) {
             dataSourceParameters.get(dataSourceName).setPassword(String.valueOf(operand.getValue()));
+        } else {
+            dataSourceParameters.get(dataSourceName).setDiver(String.valueOf(operand.getValue()));
         }
     }
     
