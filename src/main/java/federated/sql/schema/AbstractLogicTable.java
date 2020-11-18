@@ -17,6 +17,7 @@
 
 package federated.sql.schema;
 
+import lombok.Getter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
@@ -25,20 +26,37 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.datanode.DataNode;
+import org.apache.shardingsphere.infra.metadata.schema.builder.loader.TableMetaDataLoader;
 import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
 import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
 
+import javax.sql.DataSource;
+import java.sql.SQLException;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Abstract logic table.
  */
+@Getter
 public abstract class AbstractLogicTable extends AbstractTable {
+    
+    private final Collection<DataNode> dataNodes = new LinkedList<>();
     
     private final RelProtoDataType relProtoDataType;
     
-    public AbstractLogicTable() {
-    
+    public AbstractLogicTable(final Map<String, DataSource> dataSources, final Collection<DataNode> dataNodes, final DatabaseType databaseType) throws SQLException {
+        this.dataNodes.addAll(dataNodes);
+        DataNode dataNode = dataNodes.iterator().next();
+        Optional<TableMetaData> tableMetaData = TableMetaDataLoader.load(dataSources.get(dataNode.getDataSourceName()), dataNode.getTableName(), databaseType);
+        if (!tableMetaData.isPresent()) {
+            throw new RuntimeException("No table metaData.");
+        }
+        relProtoDataType = getRelDataType(tableMetaData.get());
     }
     
     private RelProtoDataType getRelDataType(final TableMetaData tableMetaData) {
