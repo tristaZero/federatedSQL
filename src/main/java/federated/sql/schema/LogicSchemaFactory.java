@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import static federated.sql.metadata.LogicSchemaConstants.COMMA_SEPARATOR;
+import static federated.sql.metadata.LogicSchemaConstants.DATA_NODES;
 import static federated.sql.metadata.LogicSchemaConstants.DATA_SOURCES;
 import static federated.sql.metadata.LogicSchemaConstants.DOT_SEPARATOR;
 import static federated.sql.metadata.LogicSchemaConstants.PASSWORD;
@@ -48,7 +49,7 @@ public final class LogicSchemaFactory implements SchemaFactory {
     }
     
     private void fillDataSourceParameters(final Map<String, DataSourceParameter> dataSourceParameters, final Entry<String, Object> operand) {
-        String[] parameters = operand.getKey().split(DOT_SEPARATOR);
+        String[] parameters = operand.getKey().split("\\" + DOT_SEPARATOR);
         String dataSourceName = parameters[1];
         if (!dataSourceParameters.containsKey(dataSourceName)) {
             dataSourceParameters.put(dataSourceName, new DataSourceParameter());
@@ -67,7 +68,7 @@ public final class LogicSchemaFactory implements SchemaFactory {
     private Map<String, Collection<DataNode>> getDataNodes(final Map<String, Object> operand) {
         Map<String, Collection<DataNode>> result = new LinkedHashMap<>();
         for (Entry<String, Object> entry : operand.entrySet()) {
-            if (entry.getKey().startsWith(DATA_SOURCES))  {
+            if (entry.getKey().startsWith(DATA_NODES))  {
                 fillDataNodes(result, entry);
             }
         }
@@ -75,7 +76,7 @@ public final class LogicSchemaFactory implements SchemaFactory {
     }
     
     private void fillDataNodes(final Map<String, Collection<DataNode>> dataNodes, final Entry<String, Object> operand) {
-        String[] parameters = operand.getKey().split(DOT_SEPARATOR);
+        String[] parameters = operand.getKey().split("\\" + DOT_SEPARATOR);
         String tableName = parameters[1];
         if (!dataNodes.containsKey(tableName)) {
             String[] dataNodesStr = operand.getValue().toString().split(COMMA_SEPARATOR);
