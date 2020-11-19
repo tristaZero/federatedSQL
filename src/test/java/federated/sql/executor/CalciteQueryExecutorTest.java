@@ -1,6 +1,8 @@
 package federated.sql.executor;
 
 import federated.sql.schema.LogicSchemaFactory;
+import org.apache.calcite.config.Lex;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,10 +31,12 @@ public final class CalciteQueryExecutorTest {
     
     private final Properties properties = new Properties();
     
-    private final String testSQL = "SELECT * FROM t_order where id < 10";
+    private final String testSQL = "SELECT * FROM t_order where order_id < 10";
     
     @Before
     public void setUp() throws Exception {
+        properties.setProperty("lex", Lex.MYSQL.name());
+        properties.setProperty("conformance", SqlConformanceEnum.MYSQL_5.name());
         properties.setProperty("schemaFactory", LogicSchemaFactory.class.getCanonicalName());
         properties.setProperty("schema", "sharding");
         properties.setProperty("schema.dataSources.ds0.url", "jdbc:mysql://127.0.0.1:3306/demo_ds_0");
