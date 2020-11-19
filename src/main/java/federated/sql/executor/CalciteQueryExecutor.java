@@ -25,14 +25,13 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Properties;
 
+import static federated.sql.metadata.LogicSchemaConstants.CONNECTION_URL;
+import static federated.sql.metadata.LogicSchemaConstants.DRIVER_NAME;
+
 /**
  * Calcite query executor.
  */
 public final class CalciteQueryExecutor {
-    
-    private static final String DRIVER_NAME = "org.apache.calcite.jdbc.Driver";
-    
-    private static final String CONNECTION_URL = "jdbc:calcite:";
     
     private final Properties properties;
     
@@ -59,6 +58,7 @@ public final class CalciteQueryExecutor {
     public ResultSet execute(final String sql, final List<Object> parameters) throws SQLException {
         PreparedStatement statement = DriverManager.getConnection(CONNECTION_URL, properties).prepareStatement(sql);
         setParameters(statement, parameters);
+        this.statement = statement;
         return statement.executeQuery();
     }
     

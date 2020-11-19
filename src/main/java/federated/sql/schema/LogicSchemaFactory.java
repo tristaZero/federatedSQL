@@ -5,6 +5,7 @@ import federated.sql.metadata.DataSourceParameter;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 
 import java.sql.SQLException;
@@ -16,10 +17,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import static federated.sql.metadata.LogicSchemaConstants.COMMA_SEPARATOR;
-import static federated.sql.metadata.LogicSchemaConstants.DATA_NODES;
 import static federated.sql.metadata.LogicSchemaConstants.DATA_SOURCES;
 import static federated.sql.metadata.LogicSchemaConstants.DOT_SEPARATOR;
 import static federated.sql.metadata.LogicSchemaConstants.PASSWORD;
+import static federated.sql.metadata.LogicSchemaConstants.TABLE_RULES;
 import static federated.sql.metadata.LogicSchemaConstants.URL;
 import static federated.sql.metadata.LogicSchemaConstants.USER_NAME;
 
@@ -29,10 +30,15 @@ import static federated.sql.metadata.LogicSchemaConstants.USER_NAME;
  *
  */
 public final class LogicSchemaFactory implements SchemaFactory {
+    
+    private final Map<String, Schema> schemas = new LinkedMap<>();
 
     public Schema create(final SchemaPlus parentSchema, final String name, final Map<String, Object> operand) {
         try {
-            return new LogicSchema(getDataSourceParameters(operand), getDataNodes(operand));
+            if (!schemas.containsKey(name)) {
+                schemas.put(name, new LogicSchema(getDataSourceParameters(operand), getDataNodes(operand)));
+            }
+            return schemas.get(name);
         } catch (final SQLException ex) {
             throw new RuntimeException(ex);
         }
@@ -68,7 +74,7 @@ public final class LogicSchemaFactory implements SchemaFactory {
     private Map<String, Collection<DataNode>> getDataNodes(final Map<String, Object> operand) {
         Map<String, Collection<DataNode>> result = new LinkedHashMap<>();
         for (Entry<String, Object> entry : operand.entrySet()) {
-            if (entry.getKey().startsWith(DATA_NODES))  {
+            if (entry.getKey().startsWith(TABLE_RULES))  {
                 fillDataNodes(result, entry);
             }
         }

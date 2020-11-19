@@ -24,9 +24,9 @@ public final class LogicSchemaConstants {
     
     public static final String COMMA_SEPARATOR = ",";
     
-    public static final String SCHEMA_SUFFIX = ".schema";
+    public static final String DRIVER_NAME = "org.apache.calcite.jdbc.Driver";
     
-    public static final String CALCITE_URL = "jdbc:calcite:";
+    public static final String CONNECTION_URL = "jdbc:calcite:";
     
     public static final String SCHEMA = "schema";
 }
