@@ -7,6 +7,7 @@ import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -26,10 +27,14 @@ import static federated.sql.metadata.LogicSchemaConstants.USER_NAME;
  * Logic schema factory.
  *
  */
-public class LogicSchemaFactory implements SchemaFactory {
+public final class LogicSchemaFactory implements SchemaFactory {
 
     public Schema create(final SchemaPlus parentSchema, final String name, final Map<String, Object> operand) {
-        return new LogicSchema(getDataSourceParameters(operand), getDataNodes(operand));
+        try {
+            return new LogicSchema(getDataSourceParameters(operand), getDataNodes(operand));
+        } catch (final SQLException ex) {
+            throw new RuntimeException(ex);
+        }
     }
     
     private Map<String, DataSourceParameter> getDataSourceParameters(final Map<String, Object> operand) {

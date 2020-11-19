@@ -23,7 +23,7 @@ import java.util.Map.Entry;
  * Logic Table.
  *
  */
-public class LogicScannableTable extends AbstractLogicTable implements ScannableTable {
+public final class LogicScannableTable extends AbstractLogicTable implements ScannableTable {
     
     private final Map<DataNode, String> tableSQLs = new LinkedMap<>();
     
