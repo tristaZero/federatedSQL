@@ -1,7 +1,7 @@
 package federated.sql.schema;
 
 /**
- * Logic rows reader
+ * Logic table scan
  *
  */
 public final class LogicTableScan {

@@ -10,10 +10,10 @@ import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 
 /**
- * Logic Table.
+ * Logic translatable table.
  *
  */
-public class LogicTable extends AbstractTable implements TranslatableTable {
+public final class LogicTranslatableTable extends AbstractTable implements TranslatableTable {
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
