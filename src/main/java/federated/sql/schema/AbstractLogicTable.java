@@ -26,6 +26,7 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.metadata.schema.builder.loader.TableMetaDataLoader;
@@ -45,18 +46,25 @@ import java.util.Optional;
 @Getter
 public abstract class AbstractLogicTable extends AbstractTable {
     
+    private final Map<String, DataSource> dataSources = new LinkedMap<>();
+    
     private final Collection<DataNode> dataNodes = new LinkedList<>();
     
     private final RelProtoDataType relProtoDataType;
     
     public AbstractLogicTable(final Map<String, DataSource> dataSources, final Collection<DataNode> dataNodes, final DatabaseType databaseType) throws SQLException {
+        this.dataSources.putAll(dataSources);
         this.dataNodes.addAll(dataNodes);
+        relProtoDataType = getRelDataType(createTableMetaData(dataSources, dataNodes, databaseType));
+    }
+    
+    private TableMetaData createTableMetaData(Map<String, DataSource> dataSources, Collection<DataNode> dataNodes, DatabaseType databaseType) throws SQLException {
         DataNode dataNode = dataNodes.iterator().next();
         Optional<TableMetaData> tableMetaData = TableMetaDataLoader.load(dataSources.get(dataNode.getDataSourceName()), dataNode.getTableName(), databaseType);
         if (!tableMetaData.isPresent()) {
             throw new RuntimeException("No table metaData.");
         }
-        relProtoDataType = getRelDataType(tableMetaData.get());
+        return tableMetaData.get();
     }
     
     private RelProtoDataType getRelDataType(final TableMetaData tableMetaData) {
