@@ -50,12 +50,15 @@ public abstract class AbstractLogicTable extends AbstractTable {
     
     private final Collection<DataNode> dataNodes = new LinkedList<>();
     
+    private final TableMetaData tableMetaData;
+    
     private final RelProtoDataType relProtoDataType;
     
     public AbstractLogicTable(final Map<String, DataSource> dataSources, final Collection<DataNode> dataNodes, final DatabaseType databaseType) throws SQLException {
         this.dataSources.putAll(dataSources);
         this.dataNodes.addAll(dataNodes);
-        relProtoDataType = getRelDataType(createTableMetaData(dataSources, dataNodes, databaseType));
+        tableMetaData = createTableMetaData(dataSources, dataNodes, databaseType);
+        relProtoDataType = getRelDataType();
     }
     
     private TableMetaData createTableMetaData(Map<String, DataSource> dataSources, Collection<DataNode> dataNodes, DatabaseType databaseType) throws SQLException {
@@ -67,7 +70,7 @@ public abstract class AbstractLogicTable extends AbstractTable {
         return tableMetaData.get();
     }
     
-    private RelProtoDataType getRelDataType(final TableMetaData tableMetaData) {
+    private RelProtoDataType getRelDataType() {
         RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
         RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         for (Map.Entry<String, ColumnMetaData> entry : tableMetaData.getColumns().entrySet()) {

@@ -18,7 +18,12 @@
 package federated.sql.schema;
 
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 /**
  * Logic row enumerator.
@@ -28,10 +33,18 @@ import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
  */
 public final class LogicRowEnumerator implements Enumerator<Object[]> {
     
+    private final Collection<ResultSet> resultSets = new LinkedList<>();
+    
+    private final Iterator<ResultSet> iterator;
+    
+    private ResultSet currentResultSet;
+    
     private Object[] currentRow;
     
-    public LogicRowEnumerator(final MergedTupleResultSet resultSet) {
-        this.resultSet = resultSet;
+    public LogicRowEnumerator(final Collection<ResultSet> resultSets) {
+        this.resultSets.addAll(resultSets);
+        iterator = this.resultSets.iterator();
+        currentResultSet = iterator.next();
     }
     
     @Override
@@ -41,22 +54,32 @@ public final class LogicRowEnumerator implements Enumerator<Object[]> {
     
     @Override
     public boolean moveNext() {
-        if (resultSet.next()) {
+        try {
+            return moveNext0();
+        } catch (final SQLException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+    
+    private boolean moveNext0() throws SQLException {
+        if (currentResultSet.next()) {
             setCurrentRow();
             return true;
         }
-        currentRow = null;
-        return false;
+        if (!iterator.hasNext()) {
+            currentRow = null;
+            return false;
+        }
+        currentResultSet = iterator.next();
+        setCurrentRow();
+        return true;
     }
     
-    private void setCurrentRow() {
-        STMTuple tuple = resultSet.getSTMTuple();
-        Object[] result = new Object[tuple.getRowVersion().getData().size()];
-        try {
-            TableMetaData tableMetaData = STMResourceManager.getInstance().getTableMetaData(tuple.getRowKey().getDataSourceName(), tuple.getRowKey().getTableName());
-            currentRow = DataConvertUtils.convertDataMap(tuple.getRowVersion().getData(), tableMetaData).values().toArray(result);
-        } catch (final STMTargetResourceException ex) {
-            throw new STMException(ex);
+    private void setCurrentRow() throws SQLException {
+        int columnCount = currentResultSet.getMetaData().getColumnCount();
+        currentRow = new Object[columnCount];
+        for (int i = 0; i < columnCount; i++) {
+            currentRow[i] = currentResultSet.getObject(i+1);
         }
     }
     @Override
@@ -66,10 +89,14 @@ public final class LogicRowEnumerator implements Enumerator<Object[]> {
     @Override
     public void close() {
         try {
-            resultSet.close();
+            for (ResultSet each : resultSets) {
+                each.getStatement().getConnection().close();
+                each.getStatement().close();
+                each.close();
+            }
             currentRow = null;
         } catch (final Exception ex) {
-            throw new STMMergeResultSetException(ex);
+            throw new RuntimeException(ex);
         }
     }
 }
