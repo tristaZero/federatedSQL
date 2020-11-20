@@ -71,6 +71,7 @@ public final class LogicRowEnumerator implements Enumerator<Object[]> {
             return false;
         }
         currentResultSet = iterator.next();
+        currentResultSet.next();
         setCurrentRow();
         return true;
     }

@@ -11,6 +11,8 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Properties;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.CoreMatchers.is;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -55,20 +57,21 @@ public final class CalciteQueryExecutorTest {
     public void assertExecute() {
         CalciteQueryExecutor executor = new CalciteQueryExecutor(properties);
         try (ResultSet resultSet = executor.execute(testSQL, Collections.emptyList())) {
-            System.out.println(getResultSetStr(resultSet));
+            assertResultSet(resultSet);
             executor.clearResultSet();
         } catch (final Exception ex) {
             ex.printStackTrace();
         }
     }
     
-    private String getResultSetStr(final ResultSet resultSet) throws SQLException {
-        StringBuilder builder = new StringBuilder();
+    private void assertResultSet(final ResultSet resultSet) throws SQLException {
+        int rowCount = 0;
         while (resultSet.next()) {
+            rowCount +=1;
             for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
-                builder.append(resultSet.getMetaData().getColumnName(i)).append(": ").append(resultSet.getString(i));
+                System.out.println(resultSet.getMetaData().getColumnName(i) + ": " + resultSet.getString(i));
             }
         }
-        return builder.toString();
+        assertThat(rowCount, is(2));
     }
 }
