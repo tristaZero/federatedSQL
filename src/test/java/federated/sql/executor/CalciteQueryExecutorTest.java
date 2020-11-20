@@ -36,7 +36,7 @@ public final class CalciteQueryExecutorTest {
     private final String testSQL = "SELECT * FROM t_order where order_id < 10";
     
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         properties.setProperty("lex", Lex.MYSQL.name());
         properties.setProperty("conformance", SqlConformanceEnum.MYSQL_5.name());
         properties.setProperty("schemaFactory", LogicSchemaFactory.class.getCanonicalName());

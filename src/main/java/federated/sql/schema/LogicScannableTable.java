@@ -25,13 +25,13 @@ import java.util.Map.Entry;
  */
 public final class LogicScannableTable extends AbstractLogicTable implements ScannableTable {
     
-    private final Map<DataNode, String> tableSQLs = new LinkedMap<>();
+    private final Map<DataNode, String> tableQuerySQLs = new LinkedMap<>();
     
     public LogicScannableTable(Map<String, DataSource> dataSources, Collection<DataNode> dataNodes, DatabaseType databaseType) throws SQLException {
         super(dataSources, dataNodes, databaseType);
         String columns = Joiner.on(",").join(getTableMetaData().getColumns().keySet());
         for (DataNode each : dataNodes) {
-            tableSQLs.put(each, String.format("SELECT %s FROM %s", columns, each.getTableName()));
+            tableQuerySQLs.put(each, String.format("SELECT %s FROM %s", columns, each.getTableName()));
         }
     }
     
@@ -48,7 +48,7 @@ public final class LogicScannableTable extends AbstractLogicTable implements Sca
     
     private Collection<ResultSet> getResultSets() {
         Collection<ResultSet> resultSets = new LinkedList<>();
-        for (Entry<DataNode, String> entry : tableSQLs.entrySet()) {
+        for (Entry<DataNode, String> entry : tableQuerySQLs.entrySet()) {
         resultSets.add(getResultSet(entry));
         }
         return resultSets;
