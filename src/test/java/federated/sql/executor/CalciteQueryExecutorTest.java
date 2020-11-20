@@ -35,6 +35,8 @@ public final class CalciteQueryExecutorTest {
     
     private final String testSQL = "SELECT * FROM t_order where order_id < 10";
     
+    private final String joinSQL = "SELECT * FROM t_order, t_order_item where t_order.order_id = t_order_item.order_id";
+    
     @Before
     public void setUp() {
         properties.setProperty("lex", Lex.MYSQL.name());
@@ -54,17 +56,17 @@ public final class CalciteQueryExecutorTest {
     }
     
     @Test
-    public void assertExecute() {
+    public void assertSingleExecute() {
         CalciteQueryExecutor executor = new CalciteQueryExecutor(properties);
         try (ResultSet resultSet = executor.execute(testSQL, Collections.emptyList())) {
-            assertResultSet(resultSet);
+            assertSingleResultSet(resultSet);
             executor.clearResultSet();
         } catch (final Exception ex) {
             ex.printStackTrace();
         }
     }
     
-    private void assertResultSet(final ResultSet resultSet) throws SQLException {
+    private void assertSingleResultSet(final ResultSet resultSet) throws SQLException {
         int rowCount = 0;
         while (resultSet.next()) {
             rowCount +=1;
@@ -73,5 +75,27 @@ public final class CalciteQueryExecutorTest {
             }
         }
         assertThat(rowCount, is(2));
+    }
+    
+    @Test
+    public void assertJoinExecute() {
+        CalciteQueryExecutor executor = new CalciteQueryExecutor(properties);
+        try (ResultSet resultSet = executor.execute(joinSQL, Collections.emptyList())) {
+            assertJoinResultSet(resultSet);
+            executor.clearResultSet();
+        } catch (final Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    
+    private void assertJoinResultSet(final ResultSet resultSet) throws SQLException {
+        int rowCount = 0;
+        while (resultSet.next()) {
+            rowCount +=1;
+            for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
+                System.out.println(resultSet.getMetaData().getColumnName(i) + ": " + resultSet.getString(i));
+            }
+        }
+        assertThat(rowCount, is(1));
     }
 }

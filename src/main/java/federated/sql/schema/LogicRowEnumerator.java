@@ -71,9 +71,11 @@ public final class LogicRowEnumerator implements Enumerator<Object[]> {
             return false;
         }
         currentResultSet = iterator.next();
-        currentResultSet.next();
-        setCurrentRow();
-        return true;
+        if (currentResultSet.next()) {
+            setCurrentRow();
+            return true;
+        }
+        return false;
     }
     
     private void setCurrentRow() throws SQLException {
