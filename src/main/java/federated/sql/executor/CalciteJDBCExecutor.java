@@ -29,9 +29,9 @@ import static federated.sql.metadata.LogicSchemaConstants.CONNECTION_URL;
 import static federated.sql.metadata.LogicSchemaConstants.DRIVER_NAME;
 
 /**
- * Calcite query executor.
+ * Calcite jdbc executor.
  */
-public final class CalciteQueryExecutor {
+public final class CalciteJDBCExecutor {
     
     private final Properties properties;
     
@@ -45,7 +45,7 @@ public final class CalciteQueryExecutor {
         }
     }
     
-    public CalciteQueryExecutor(final Properties connectionProps) {
+    public CalciteJDBCExecutor(final Properties connectionProps) {
         properties = connectionProps;
     }
     

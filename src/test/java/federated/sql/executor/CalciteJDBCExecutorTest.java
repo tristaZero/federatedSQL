@@ -29,11 +29,11 @@ import static org.hamcrest.CoreMatchers.is;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public final class CalciteQueryExecutorTest {
+public final class CalciteJDBCExecutorTest {
     
     private final Properties properties = new Properties();
     
-    private final String testSQL = "SELECT * FROM t_order where order_id < 10";
+    private final String testSQL = "SELECT order_id FROM t_order where order_id < 10";
     
     private final String joinSQL = "SELECT * FROM t_order, t_order_item where t_order.order_id = t_order_item.order_id";
     
@@ -57,7 +57,7 @@ public final class CalciteQueryExecutorTest {
     
     @Test
     public void assertSingleExecute() {
-        CalciteQueryExecutor executor = new CalciteQueryExecutor(properties);
+        CalciteJDBCExecutor executor = new CalciteJDBCExecutor(properties);
         try (ResultSet resultSet = executor.execute(testSQL, Collections.emptyList())) {
             assertSingleResultSet(resultSet);
             executor.clearResultSet();
@@ -79,7 +79,7 @@ public final class CalciteQueryExecutorTest {
     
     @Test
     public void assertJoinExecute() {
-        CalciteQueryExecutor executor = new CalciteQueryExecutor(properties);
+        CalciteJDBCExecutor executor = new CalciteJDBCExecutor(properties);
         try (ResultSet resultSet = executor.execute(joinSQL, Collections.emptyList())) {
             assertJoinResultSet(resultSet);
             executor.clearResultSet();
