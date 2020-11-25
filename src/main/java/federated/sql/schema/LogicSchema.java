@@ -60,7 +60,7 @@ public final class LogicSchema extends AbstractSchema {
                 tableDataSources.put(each.getDataSourceName(), dataSources.get(each.getDataSourceName()));
             }
         }
-        return new LogicScannableTable(tableDataSources, dataNodes, databaseType);
+        return new LogicFilterableTable(tableDataSources, dataNodes, databaseType);
     }
     
     @Override
