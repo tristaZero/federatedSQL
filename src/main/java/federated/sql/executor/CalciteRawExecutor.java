@@ -22,16 +22,19 @@ import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.prepare.CalciteCatalogReader;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
+import org.apache.calcite.sql2rel.StandardConvertletTable;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -51,15 +54,19 @@ public final class CalciteRawExecutor {
     
     private final CalciteConnectionConfig config;
     
+    private final RelDataTypeFactory typeFactory;
+    
     private final SchemaFactory factory;
     
-    private final Map<String, Object> operands;
+    private final CalciteSchema schema;
     
     public CalciteRawExecutor(final Properties connectionProps) {
         properties = connectionProps;
         config = new CalciteConnectionConfigImpl(properties);
+        typeFactory = new JavaTypeFactoryImpl();
         factory = config.schemaFactory(SchemaFactory.class, null);
-        operands = getOperands();
+        schema = CalciteSchema.createRootSchema(true);
+        schema.add(config.schema(), new ReflectiveSchema(factory.create(null, config.schema(), getOperands())));
     }
     
     private Map<String, Object> getOperands() {
@@ -81,11 +88,22 @@ public final class CalciteRawExecutor {
     public ResultSet execute(final String sql, final List<Object> parameters) throws SqlParseException {
         SqlParser parser = SqlParser.create(sql);
         SqlNode sqlNode = parser.parseQuery();
-        CalciteSchema schema = CalciteSchema.createRootSchema(true);
-        schema.add(config.schema(), new ReflectiveSchema(factory.create(null, config.schema(), operands)));
-        RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
+        
         CalciteCatalogReader catalogReader = new CalciteCatalogReader(schema, Collections.singletonList(config.schema()), typeFactory, config);
-        SqlValidator validator = SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(), catalogReader, typeFactory, SqlConformanceEnum.DEFAULT);
+        SqlValidator validator = SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(), catalogReader, typeFactory, SqlValidator.Config.DEFAULT);
+        SqlNode validNode = validator.validate(sqlNode);
+        
+        RelOptCluster cluster = newCluster(typeFactory);
+        SqlToRelConverter relConverter = new SqlToRelConverter(
+                NOOP_EXPANDER,
+                validator,
+                catalogReader,
+                cluster,
+                StandardConvertletTable.INSTANCE,
+                SqlToRelConverter.Config.DEFAULT);
+    
+        RelNode logPlan = relConverter.convertQuery(validNode, false, true).rel;
+        
     }
     
     
