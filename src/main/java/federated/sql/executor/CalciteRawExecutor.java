@@ -17,16 +17,31 @@
 
 package federated.sql.executor;
 
+import org.apache.calcite.DataContext;
+import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRules;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.adapter.java.ReflectiveSchema;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptTable.ViewExpander;
+import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.runtime.Bindable;
 import org.apache.calcite.schema.SchemaFactory;
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -36,12 +51,9 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -50,26 +62,28 @@ import java.util.Properties;
  */
 public final class CalciteRawExecutor {
     
-    private final Properties properties;
-    
-    private final CalciteConnectionConfig config;
-    
     private final RelDataTypeFactory typeFactory;
-    
-    private final SchemaFactory factory;
     
     private final CalciteSchema schema;
     
+    private final CalciteCatalogReader catalogReader;
+    
+    private final SqlValidator validator;
+    
+    private final SqlToRelConverter relConverter;
+    
     public CalciteRawExecutor(final Properties connectionProps) {
-        properties = connectionProps;
-        config = new CalciteConnectionConfigImpl(properties);
+        CalciteConnectionConfig config = new CalciteConnectionConfigImpl(connectionProps);
         typeFactory = new JavaTypeFactoryImpl();
-        factory = config.schemaFactory(SchemaFactory.class, null);
+        SchemaFactory factory = config.schemaFactory(SchemaFactory.class, null);
         schema = CalciteSchema.createRootSchema(true);
-        schema.add(config.schema(), new ReflectiveSchema(factory.create(null, config.schema(), getOperands())));
+        schema.add(config.schema(), new ReflectiveSchema(factory.create(null, config.schema(), getOperands(connectionProps))));
+        catalogReader = new CalciteCatalogReader(schema, Collections.singletonList(config.schema()), typeFactory, config);
+        validator = SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(), catalogReader, typeFactory, SqlValidator.Config.DEFAULT);
+        relConverter = createSqlToRelConverter();
     }
     
-    private Map<String, Object> getOperands() {
+    private Map<String, Object> getOperands(final Properties properties) {
         Map<String, Object> result = new LinkedHashMap<>();
         for (String each : properties.stringPropertyNames()) {
             if (each.startsWith("schema.")) {
@@ -79,50 +93,80 @@ public final class CalciteRawExecutor {
         return result;
     }
     
+    private SqlToRelConverter createSqlToRelConverter() {
+        RelOptCluster cluster = newCluster();
+        SqlToRelConverter.Config config = SqlToRelConverter.config().withTrimUnusedFields(true);
+        ViewExpander expander = (rowType, queryString, schemaPath, viewPath) -> null;
+        return new SqlToRelConverter(expander, validator, catalogReader, cluster, StandardConvertletTable.INSTANCE, config);
+    }
+    
+    private RelOptCluster newCluster() {
+        RelOptPlanner planner = new VolcanoPlanner();
+        addPlanRules(planner);
+        planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+        relConverter.getCluster().traitSet().replace(EnumerableConvention.INSTANCE);
+        RelOptCluster result = RelOptCluster.create(planner, new RexBuilder(typeFactory));
+        result.traitSet().replace(EnumerableConvention.INSTANCE);
+        return result;
+    }
+    
+    private void addPlanRules(final RelOptPlanner planner) {
+        planner.addRule(EnumerableRules.ENUMERABLE_PROJECT_RULE);
+        planner.addRule(EnumerableRules.ENUMERABLE_LIMIT_RULE);
+        planner.addRule(EnumerableRules.ENUMERABLE_CALC_RULE);
+        planner.addRule(EnumerableRules.ENUMERABLE_JOIN_RULE);
+        planner.addRule(EnumerableRules.ENUMERABLE_SORT_RULE);
+    }
+    
     /**
      * Execute.
      *
      * @return calcite query result
-     * @throws SQLException SQL exception
+     * @throws SqlParseException SQL parse exception
      */
-    public ResultSet execute(final String sql, final List<Object> parameters) throws SqlParseException {
-        SqlParser parser = SqlParser.create(sql);
-        SqlNode sqlNode = parser.parseQuery();
-        
-        CalciteCatalogReader catalogReader = new CalciteCatalogReader(schema, Collections.singletonList(config.schema()), typeFactory, config);
-        SqlValidator validator = SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(), catalogReader, typeFactory, SqlValidator.Config.DEFAULT);
+    public Enumerable<Object[]> execute(final String sql) throws SqlParseException {
+        SqlNode sqlNode = SqlParser.create(sql).parseQuery();
         SqlNode validNode = validator.validate(sqlNode);
-        
-        RelOptCluster cluster = newCluster(typeFactory);
-        SqlToRelConverter relConverter = new SqlToRelConverter(
-                NOOP_EXPANDER,
-                validator,
-                catalogReader,
-                cluster,
-                StandardConvertletTable.INSTANCE,
-                SqlToRelConverter.Config.DEFAULT);
-    
-        RelNode logPlan = relConverter.convertQuery(validNode, false, true).rel;
-        
+        RelNode logicPlan = relConverter.convertQuery(validNode, false, true).rel;
+//        System.out.println(RelOptUtil.dumpPlan("[Logical plan]", logicPlan, SqlExplainFormat.TEXT, SqlExplainLevel.NON_COST_ATTRIBUTES));
+        RelNode bestPlan = optimize(logicPlan);
+//        System.out.println(RelOptUtil.dumpPlan("[Physical plan]", bestPlan, SqlExplainFormat.TEXT, SqlExplainLevel.NON_COST_ATTRIBUTES));
+        return execute(bestPlan);
     }
     
-    
-    
-    private void setParameters(final PreparedStatement preparedStatement, final List<Object> parameters) throws SQLException {
-        int count = 1;
-        for (Object each : parameters) {
-            preparedStatement.setObject(count, each);
-            count++;
-        }
+    private RelNode optimize(final RelNode logicPlan) {
+        RelOptPlanner planner = relConverter.getCluster().getPlanner();
+        planner.setRoot(planner.changeTraits(logicPlan, relConverter.getCluster().traitSet()));
+        return planner.findBestExp();
     }
     
-    /**
-     * Clear resultSet.
-     *
-     * @throws Exception exception
-     */
-    public void clearResultSet() throws Exception {
-        statement.getConnection().close();
-        statement.close();
+    private Enumerable<Object[]> execute(final RelNode bestPlan) {
+        Bindable<Object[]> executablePlan = EnumerableInterpretable.toBindable(new HashMap<>(), null, (EnumerableRel) bestPlan, EnumerableRel.Prefer.ARRAY);
+        return executablePlan.bind(createDataContext());
+    }
+    
+    private DataContext createDataContext() {
+        return new DataContext() {
+            
+            @Override
+            public SchemaPlus getRootSchema() {
+                return schema.plus();
+            }
+    
+            @Override
+            public JavaTypeFactory getTypeFactory() {
+                return (JavaTypeFactory) typeFactory;
+            }
+    
+            @Override
+            public QueryProvider getQueryProvider() {
+                return null;
+            }
+    
+            @Override
+            public Object get(String name) {
+                return null;
+            }
+        };
     }
 }
