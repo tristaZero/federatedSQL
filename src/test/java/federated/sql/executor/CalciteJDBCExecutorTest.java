@@ -96,6 +96,6 @@ public final class CalciteJDBCExecutorTest {
                 System.out.println(resultSet.getMetaData().getColumnName(i) + ": " + resultSet.getString(i));
             }
         }
-        assertThat(rowCount, is(1));
+        assertThat(rowCount, is(2));
     }
 }
