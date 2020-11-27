@@ -46,6 +46,8 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParser.Config;
+import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -56,6 +58,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+
+import static org.apache.calcite.sql.parser.SqlParser.DEFAULT_IDENTIFIER_MAX_LENGTH;
+
+;
 
 /**
  * Calcite raw executor.
@@ -68,6 +74,8 @@ public final class CalciteRawExecutor {
     
     private final CalciteCatalogReader catalogReader;
     
+    private final Config parserConfig;
+    
     private final SqlValidator validator;
     
     private final SqlToRelConverter relConverter;
@@ -79,7 +87,16 @@ public final class CalciteRawExecutor {
         schema = CalciteSchema.createRootSchema(true);
         schema.add(config.schema(), new ReflectiveSchema(factory.create(null, config.schema(), getOperands(connectionProps))));
         catalogReader = new CalciteCatalogReader(schema, Collections.singletonList(config.schema()), typeFactory, config);
-        validator = SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(), catalogReader, typeFactory, SqlValidator.Config.DEFAULT);
+        parserConfig = SqlParser.config()
+                .withLex(config.lex())
+                .withIdentifierMaxLength(DEFAULT_IDENTIFIER_MAX_LENGTH)
+                .withConformance(config.conformance())
+                .withParserFactory(SqlParserImpl.FACTORY);
+        validator = SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(), catalogReader, typeFactory, SqlValidator.Config.DEFAULT
+                .withLenientOperatorLookup(config.lenientOperatorLookup())
+                .withSqlConformance(config.conformance())
+                .withDefaultNullCollation(config.defaultNullCollation())
+                .withIdentifierExpansion(true));
         relConverter = createSqlToRelConverter();
     }
     
@@ -104,7 +121,6 @@ public final class CalciteRawExecutor {
         RelOptPlanner planner = new VolcanoPlanner();
         addPlanRules(planner);
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-        relConverter.getCluster().traitSet().replace(EnumerableConvention.INSTANCE);
         RelOptCluster result = RelOptCluster.create(planner, new RexBuilder(typeFactory));
         result.traitSet().replace(EnumerableConvention.INSTANCE);
         return result;
@@ -125,7 +141,7 @@ public final class CalciteRawExecutor {
      * @throws SqlParseException SQL parse exception
      */
     public Enumerable<Object[]> execute(final String sql) throws SqlParseException {
-        SqlNode sqlNode = SqlParser.create(sql).parseQuery();
+        SqlNode sqlNode = SqlParser.create(sql, parserConfig).parseQuery();
         SqlNode validNode = validator.validate(sqlNode);
         RelNode logicPlan = relConverter.convertQuery(validNode, false, true).rel;
 //        System.out.println(RelOptUtil.dumpPlan("[Logical plan]", logicPlan, SqlExplainFormat.TEXT, SqlExplainLevel.NON_COST_ATTRIBUTES));
