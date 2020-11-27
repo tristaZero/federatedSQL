@@ -23,7 +23,6 @@ import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.adapter.java.ReflectiveSchema;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -84,8 +83,8 @@ public final class CalciteRawExecutor {
         CalciteConnectionConfig config = new CalciteConnectionConfigImpl(connectionProps);
         typeFactory = new JavaTypeFactoryImpl();
         SchemaFactory factory = config.schemaFactory(SchemaFactory.class, null);
-        schema = CalciteSchema.createRootSchema(true);
-        schema.add(config.schema(), new ReflectiveSchema(factory.create(null, config.schema(), getOperands(connectionProps))));
+        CalciteSchema rootSchema = CalciteSchema.createRootSchema(true);
+        schema = rootSchema.add(config.schema(), factory.create(rootSchema.plus(), config.schema(), getOperands(connectionProps)));
         catalogReader = new CalciteCatalogReader(schema, Collections.singletonList(config.schema()), typeFactory, config);
         parserConfig = SqlParser.config()
                 .withLex(config.lex())
@@ -121,9 +120,7 @@ public final class CalciteRawExecutor {
         RelOptPlanner planner = new VolcanoPlanner();
         addPlanRules(planner);
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-        RelOptCluster result = RelOptCluster.create(planner, new RexBuilder(typeFactory));
-        result.traitSet().replace(EnumerableConvention.INSTANCE);
-        return result;
+        return RelOptCluster.create(planner, new RexBuilder(typeFactory));
     }
     
     private void addPlanRules(final RelOptPlanner planner) {
@@ -132,6 +129,8 @@ public final class CalciteRawExecutor {
         planner.addRule(EnumerableRules.ENUMERABLE_CALC_RULE);
         planner.addRule(EnumerableRules.ENUMERABLE_JOIN_RULE);
         planner.addRule(EnumerableRules.ENUMERABLE_SORT_RULE);
+        planner.addRule(EnumerableRules.ENUMERABLE_FILTER_RULE);
+        planner.addRule(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
     }
     
     /**
@@ -152,7 +151,7 @@ public final class CalciteRawExecutor {
     
     private RelNode optimize(final RelNode logicPlan) {
         RelOptPlanner planner = relConverter.getCluster().getPlanner();
-        planner.setRoot(planner.changeTraits(logicPlan, relConverter.getCluster().traitSet()));
+        planner.setRoot(planner.changeTraits(logicPlan, relConverter.getCluster().traitSet().replace(EnumerableConvention.INSTANCE)));
         return planner.findBestExp();
     }
     
