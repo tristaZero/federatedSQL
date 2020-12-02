@@ -22,7 +22,7 @@
         <mockito.version>2.7.21</mockito.version>
         <commons-collections4.version>4.2</commons-collections4.version>
         <hikari-cp.version>3.4.2</hikari-cp.version>
-        <mysql-connector-java.version>5.1.47</mysql-connector-java.version>
+        <mysql-connector-java.version>[8.0.16,)</mysql-connector-java.version>
         <calcite.version>1.26.0</calcite.version>
         <shardingsphere.version>5.0.0-RC1-SNAPSHOT</shardingsphere.version>
     </properties>
