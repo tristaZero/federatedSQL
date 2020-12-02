@@ -25,7 +25,7 @@ This executor skips Calcite JDBC driver and call the crude parse, optimize, exec
 
 ### Instruction for unit tests
 
-### Introduction
+#### Introduction
 These unit tests to test simple SQL and Join SQL for `Logic table` in `Logic schema`.
 
 - Logic schema (for users) consists of many actual databases in your MySQL instance
