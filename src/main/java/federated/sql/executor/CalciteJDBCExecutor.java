@@ -30,6 +30,8 @@ import static federated.sql.metadata.LogicSchemaConstants.DRIVER_NAME;
 
 /**
  * Calcite jdbc executor.
+ *
+ * This executor used Calcite JDBC driver to execute SQL.
  */
 public final class CalciteJDBCExecutor {
     

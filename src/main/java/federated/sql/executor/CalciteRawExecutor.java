@@ -67,6 +67,8 @@ import static org.apache.calcite.sql.parser.SqlParser.DEFAULT_IDENTIFIER_MAX_LEN
 
 /**
  * Calcite raw executor.
+ *
+ * This executor skips Calcite JDBC driver and call the crude parse, optimize, execute API by itself.
  */
 public final class CalciteRawExecutor {
     
