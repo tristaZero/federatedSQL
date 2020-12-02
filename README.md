@@ -38,13 +38,13 @@ These unit tests to test simple SQL and Join SQL for `Logic table` in `Logic sch
 ```sql
 CREATE DATABASE demo_ds_0;
 CREATE DATABASE demo_ds_1;
-USE demo_ds_0
+USE demo_ds_0;
 CREATE TABLE `t_order_0` (
   `order_id` int NOT NULL,
   `user_id` int NOT NULL,
   `status` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`order_id`)
-) ENGINE=InnoDB
+) ENGINE=InnoDB;
  CREATE TABLE `t_order_item_0` (
   `order_item_id` int NOT NULL,
   `order_id` int NOT NULL,
@@ -52,13 +52,13 @@ CREATE TABLE `t_order_0` (
   `status` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`order_item_id`)
 ) ENGINE=InnoDB;
-use demo_ds_1
+use demo_ds_1;
 CREATE TABLE `t_order_1` (
   `order_id` int NOT NULL,
   `user_id` int NOT NULL,
   `status` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`order_id`)
-) ENGINE=InnoDB
+) ENGINE=InnoDB;
  CREATE TABLE `t_order_item_1` (
   `order_item_id` int NOT NULL,
   `order_id` int NOT NULL,
