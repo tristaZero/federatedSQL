@@ -29,9 +29,9 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.commons.collections4.map.LinkedMap;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.datanode.DataNode;
-import org.apache.shardingsphere.infra.metadata.schema.builder.loader.TableMetaDataLoader;
-import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
-import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
+import org.apache.shardingsphere.infra.metadata.model.physical.model.column.PhysicalColumnMetaData;
+import org.apache.shardingsphere.infra.metadata.model.physical.model.table.PhysicalTableMetaData;
+import org.apache.shardingsphere.infra.metadata.model.physical.model.table.PhysicalTableMetaDataLoader;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -50,7 +50,7 @@ public abstract class AbstractLogicTable extends AbstractTable {
     
     private final Collection<DataNode> dataNodes = new LinkedList<>();
     
-    private final TableMetaData tableMetaData;
+    private final PhysicalTableMetaData tableMetaData;
     
     private final RelProtoDataType relProtoDataType;
     
@@ -61,9 +61,9 @@ public abstract class AbstractLogicTable extends AbstractTable {
         relProtoDataType = getRelDataType();
     }
     
-    private TableMetaData createTableMetaData(Map<String, DataSource> dataSources, Collection<DataNode> dataNodes, DatabaseType databaseType) throws SQLException {
+    private PhysicalTableMetaData createTableMetaData(Map<String, DataSource> dataSources, Collection<DataNode> dataNodes, DatabaseType databaseType) throws SQLException {
         DataNode dataNode = dataNodes.iterator().next();
-        Optional<TableMetaData> tableMetaData = TableMetaDataLoader.load(dataSources.get(dataNode.getDataSourceName()), dataNode.getTableName(), databaseType);
+        Optional<PhysicalTableMetaData> tableMetaData = PhysicalTableMetaDataLoader.load(dataSources.get(dataNode.getDataSourceName()), dataNode.getTableName(), databaseType);
         if (!tableMetaData.isPresent()) {
             throw new RuntimeException("No table metaData.");
         }
@@ -73,7 +73,7 @@ public abstract class AbstractLogicTable extends AbstractTable {
     private RelProtoDataType getRelDataType() {
         RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
         RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-        for (Map.Entry<String, ColumnMetaData> entry : tableMetaData.getColumns().entrySet()) {
+        for (Map.Entry<String, PhysicalColumnMetaData> entry : tableMetaData.getColumns().entrySet()) {
             SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(entry.getValue().getDataType());
             fieldInfo.add(entry.getKey(), null == sqlTypeName ? typeFactory.createUnknownType() : typeFactory.createTypeWithNullability(typeFactory.createSqlType(sqlTypeName), true));
         }
