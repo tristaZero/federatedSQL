@@ -37,6 +37,17 @@ public final class CalciteRawExecutorTest {
     
     private final String joinSQL = "SELECT * FROM t_order, t_order_item where t_order.order_id = t_order_item.order_id";
     
+    /**
+     * t_order and t_order_item are sharding tables. Here is the distribution fo them,
+     *
+     *    ds0                  ds1
+     * t_order_0            t_order_1
+     * t_order_item_0       t_order_item_1
+     *
+     * That also means t_oder (logic table) is made of `ds0.t_order_0` and `ds1.t_order_1` (actual tables).
+     * Similarly, `ds0.t_order_item_0` and `ds1.t_order_item_1` makes up t_order_item
+     * But for user, they just know there are two logic tables, i.e., t_order and t_order_item.
+     */
     @Before
     public void setUp() {
         properties.setProperty("lex", Lex.MYSQL.name());
