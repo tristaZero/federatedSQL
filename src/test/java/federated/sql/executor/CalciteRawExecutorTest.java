@@ -46,7 +46,7 @@ public final class CalciteRawExecutorTest {
      *
      * That also means t_oder (logic table) is made of `ds0.t_order_0` and `ds1.t_order_1` (actual tables).
      * Similarly, `ds0.t_order_item_0` and `ds1.t_order_item_1` makes up t_order_item
-     * But for user, they just know there are two logic tables, i.e., t_order and t_order_item.
+     * But for user, they just know there are two logic tables, i.e., t_order and t_order_item in `sharding` database.
      */
     @Before
     public void setUp() {
