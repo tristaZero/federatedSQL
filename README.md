@@ -8,14 +8,14 @@ A repository for federatedSQL and SQL optimization using Apache Calcite.
 ## How to run?
 There two executors to choose.
 
-- CalciteJDBCExecutor
+### CalciteJDBCExecutor
+
 This executor used Calcite JDBC driver to execute SQL.
-
-    1. Use `CalciteJDBCExecutor` to execute federated SQL queries
-    2. `CalciteJDBCExecutorTest is an example
+1. Use `CalciteJDBCExecutor` to execute federated SQL queries
+2. `CalciteJDBCExecutorTest is an example
     
-- CalciteRawExecutor
-This executor skips Calcite JDBC driver and call the crude parse, optimize, execute API by itself.
+### CalciteRawExecutor
 
-    1. Use `CalciteRawExecutor` to execute federated SQL queries
-    2. `CalciteRawExecutorTest is an example
+This executor skips Calcite JDBC driver and call the crude parse, optimize, execute API by itself.
+1. Use `CalciteRawExecutor` to execute federated SQL queries
+2. `CalciteRawExecutorTest is an example
