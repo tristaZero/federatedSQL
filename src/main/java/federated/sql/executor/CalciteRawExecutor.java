@@ -18,7 +18,6 @@
 package federated.sql.executor;
 
 import org.apache.calcite.DataContext;
-import org.apache.calcite.DataContext.Variable;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -41,7 +40,6 @@ import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Bindable;
-import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
@@ -54,9 +52,11 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
-import org.apache.calcite.util.Holder;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Properties;
 
 import static org.apache.calcite.sql.parser.SqlParser.DEFAULT_IDENTIFIER_MAX_LENGTH;
 
@@ -81,18 +81,14 @@ public final class CalciteRawExecutor {
     
     private final SqlToRelConverter relConverter;
     
-    private final Map<String, Object> internalParameters;
-    
     public CalciteRawExecutor(final Properties connectionProps) {
         CalciteConnectionConfig config = new CalciteConnectionConfigImpl(connectionProps);
         typeFactory = new JavaTypeFactoryImpl();
         SchemaFactory factory = config.schemaFactory(SchemaFactory.class, null);
-        CalciteSchema rootSchema = CalciteSchema.createRootSchema(true);
-//        schema = rootSchema.add(config.schema(), new ReflectiveSchema(factory.create(rootSchema.plus(), config.schema(), getOperands(connectionProps))));
-        Schema schema = factory.create(rootSchema.plus(), config.schema(), getOperands(connectionProps));
-        rootSchema.add(config.schema(),schema);
-        this.schema = rootSchema;
-        catalogReader = new CalciteCatalogReader(this.schema, Collections.singletonList(config.schema()), typeFactory, config);
+        schema = CalciteSchema.createRootSchema(true);
+//        schema = rootSchema.add(config.schema(), factory.create(rootSchema.plus(), config.schema(), getOperands(connectionProps)));
+        schema.add(config.schema(), factory.create(schema.plus(), config.schema(), getOperands(connectionProps)));
+        catalogReader = new CalciteCatalogReader(schema, Collections.singletonList(config.schema()), typeFactory, config);
         parserConfig = SqlParser.config()
                 .withLex(config.lex())
                 .withIdentifierMaxLength(DEFAULT_IDENTIFIER_MAX_LENGTH)
@@ -104,7 +100,6 @@ public final class CalciteRawExecutor {
                 .withDefaultNullCollation(config.defaultNullCollation())
                 .withIdentifierExpansion(true));
         relConverter = createSqlToRelConverter();
-        internalParameters = getInternalParameters(config);
     }
     
     private Map<String, Object> getOperands(final Properties properties) {
@@ -144,20 +139,6 @@ public final class CalciteRawExecutor {
 //        planner.addRule(EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE);
     }
     
-    private Map<String, Object> getInternalParameters(final CalciteConnectionConfig config) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("_conformance", config.conformance());
-        Holder<Long> timeHolder = Holder.of(System.currentTimeMillis());
-        long time = timeHolder.get();
-        TimeZone timeZone = TimeZone.getDefault();
-        long localOffset = timeZone.getOffset(time);
-        long currentOffset = localOffset;
-        result.put(Variable.CURRENT_TIMESTAMP.camelName, time + currentOffset);
-        result.put(Variable.LOCAL_TIMESTAMP.camelName, time + localOffset);
-        result.put(Variable.UTC_TIMESTAMP.camelName, time);
-        result.put(Variable.TIMEOUT.camelName, 1000L);
-        return result;
-    }
     /**
      * Execute.
      *
@@ -181,7 +162,7 @@ public final class CalciteRawExecutor {
     }
     
     private Enumerable<Object[]> execute(final RelNode bestPlan) {
-        Bindable<Object[]> executablePlan = EnumerableInterpretable.toBindable(internalParameters, null, (EnumerableRel) bestPlan, EnumerableRel.Prefer.ARRAY);
+        Bindable<Object[]> executablePlan = EnumerableInterpretable.toBindable(Collections.emptyMap(), null, (EnumerableRel) bestPlan, EnumerableRel.Prefer.ARRAY);
         return executablePlan.bind(createDataContext());
     }
 
@@ -205,7 +186,7 @@ public final class CalciteRawExecutor {
     
             @Override
             public Object get(String name) {
-                return internalParameters.get(name);
+                return null;
             }
         };
     }
