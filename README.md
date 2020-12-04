@@ -34,11 +34,13 @@ These unit tests to test simple SQL and Join SQL for `Logic table` in `Logic sch
 
 #### Preparation
 1. Start MySQL service
-2. Run SQLs below
+2. Execute SQLs below
 ```sql
 CREATE DATABASE demo_ds_0;
 CREATE DATABASE demo_ds_1;
+
 USE demo_ds_0;
+
 CREATE TABLE `t_order_0` (
   `order_id` int NOT NULL,
   `user_id` int NOT NULL,
@@ -52,7 +54,12 @@ CREATE TABLE `t_order_0` (
   `status` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`order_item_id`)
 ) ENGINE=InnoDB;
+
+INSERT INTO t_order_0 SET order_id = 2, user_id = 2;
+INSERT INTO t_order_item_0 SET order_id = 2, user_id = 2, order_item_id = 2;
+
 use demo_ds_1;
+
 CREATE TABLE `t_order_1` (
   `order_id` int NOT NULL,
   `user_id` int NOT NULL,
@@ -66,6 +73,9 @@ CREATE TABLE `t_order_1` (
   `status` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`order_item_id`)
 ) ENGINE=InnoDB;
+
+INSERT INTO t_order_1 SET order_id = 1, user_id = 1;
+INSERT INTO t_order_item_2 SET order_id = 1, user_id = 1, order_item_id = 1;
 ```
 3. Update configuration
 Update JdbcUrl, password, username with the properties of your database instance in `setUp()` of `CalciteRawExecutorTest` or `CalciteJDBCExecutorTest`
