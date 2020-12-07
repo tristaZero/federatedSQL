@@ -1,36 +1,42 @@
 
 ## FederatedSQL
-A repository for federated SQL and SQL optimization using Apache Calcite.
+A repository for federated SQL and SQL optimization leveraging Apache Calcite.
 
 ## Functions
 - Support SQL queries for `sharding table` in `sharding schema`
-- Support SQL queries that join tables from different datasets 
+- Support SQL queries that join tables from different database instances 
 - SQL query optimization
 
 ## How to run?
-There two executors to choose.
+There two executors to test.
 
 ### CalciteJDBCExecutor
 
-This executor used Calcite JDBC driver to execute SQL.
+This executor executes SQL with the help of the Calcite JDBC driver.
 1. Use `CalciteJDBCExecutor` to execute federated SQL queries
 2. `CalciteJDBCExecutorTest` is an example
     
 ### CalciteRawExecutor
 
-This executor skips Calcite JDBC driver and call the crude parse, optimize, execute API by itself.
+This executor skips the Calcite JDBC driver and calls the crude parse(), optimize() and execute() by itself. As you know, I write it diving into the source code of Apache Calcite. Why did I want to do that? The reason is that I am considering using [ShardingSphere Parser](https://shardingsphere.apache.org/document/current/en/features/sharding/use-norms/parser/) to have broad SQL support.
 1. Use `CalciteRawExecutor` to execute federated SQL queries
 2. `CalciteRawExecutorTest` is an example
 
-
-### Instruction for unit tests
+### Unit tests
 
 #### Introduction
 These unit tests to test simple SQL and Join SQL for `Logic table` in `Logic schema`.
 
 - Logic schema (for users) consists of many actual databases in your MySQL instance
-
 - Logic table (for users) is made of actual tables existing in your actual databases
+
+In this example, we will have two `Logic table`, namely, `t_order` and `t_order_item` in `Logic schema`, i.e., `sharding`. Here is the distribution fo them,
+```
+   ds0                    ds1
+t_order_0            t_order_1
+t_order_item_0   t_order_item_1
+```
+It is apparent that t_oder (logic table) is made of `ds0.t_order_0` and `ds1.t_order_1` (actual tables). Similarly, `ds0.t_order_item_0` and `ds1.t_order_item_1` makes up t_order_item. Hense, users just know there are two logic tables, i.e., t_order and t_order_item in `sharding` database without attention to its actual tables..
 
 #### Preparation
 1. Start MySQL service
