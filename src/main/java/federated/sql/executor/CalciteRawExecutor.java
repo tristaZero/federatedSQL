@@ -25,6 +25,8 @@ import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
+import org.apache.calcite.interpreter.InterpretableConvention;
+import org.apache.calcite.interpreter.InterpretableConverter;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.Enumerable;
@@ -33,6 +35,7 @@ import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable.ViewExpander;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
@@ -86,7 +89,6 @@ public final class CalciteRawExecutor {
         typeFactory = new JavaTypeFactoryImpl();
         SchemaFactory factory = config.schemaFactory(SchemaFactory.class, null);
         schema = CalciteSchema.createRootSchema(true);
-//        schema = rootSchema.add(config.schema(), factory.create(rootSchema.plus(), config.schema(), getOperands(connectionProps)));
         schema.add(config.schema(), factory.create(schema.plus(), config.schema(), getOperands(connectionProps)));
         catalogReader = new CalciteCatalogReader(schema, Collections.singletonList(config.schema()), typeFactory, config);
         parserConfig = SqlParser.config()
@@ -152,7 +154,8 @@ public final class CalciteRawExecutor {
 //        System.out.println(RelOptUtil.dumpPlan("[Logical plan]", logicPlan, SqlExplainFormat.TEXT, SqlExplainLevel.NON_COST_ATTRIBUTES));
         RelNode bestPlan = optimize(logicPlan);
 //        System.out.println(RelOptUtil.dumpPlan("[Physical plan]", bestPlan, SqlExplainFormat.TEXT, SqlExplainLevel.NON_COST_ATTRIBUTES));
-        return execute(bestPlan);
+//        return executeEnumerableInterpretable(bestPlan);
+        return executeByCustomInterpretable(bestPlan);
     }
     
     private RelNode optimize(final RelNode logicPlan) {
@@ -161,9 +164,21 @@ public final class CalciteRawExecutor {
         return planner.findBestExp();
     }
     
-    private Enumerable<Object[]> execute(final RelNode bestPlan) {
+    private Enumerable<Object[]> executeEnumerableInterpretable(final RelNode bestPlan) {
         Bindable<Object[]> executablePlan = EnumerableInterpretable.toBindable(Collections.emptyMap(), null, (EnumerableRel) bestPlan, EnumerableRel.Prefer.ARRAY);
         return executablePlan.bind(createDataContext());
+    }
+    
+    private Enumerable<Object[]> executeByCustomInterpretable(final RelNode bestPlan) {
+        RelOptCluster cluster = relConverter.getCluster();
+        return new CustomInterpretableConverter(cluster, cluster.traitSetOf(InterpretableConvention.INSTANCE), bestPlan).bind(createDataContext());
+    }
+    
+    public static final class CustomInterpretableConverter extends InterpretableConverter {
+    
+        public CustomInterpretableConverter(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
+            super(cluster, traits, input);
+        }
     }
 
     private DataContext createDataContext() {
