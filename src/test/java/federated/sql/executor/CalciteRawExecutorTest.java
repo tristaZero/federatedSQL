@@ -91,6 +91,6 @@ public final class CalciteRawExecutorTest {
                 System.out.println(o);
             }
         }
-        assertThat(rowCount, is(1));
+        assertThat(rowCount, is(2));
     }
 }
