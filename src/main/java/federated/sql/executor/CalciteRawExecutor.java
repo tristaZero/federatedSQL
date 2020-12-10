@@ -22,13 +22,16 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Bindable;
 import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -117,11 +120,8 @@ public final class CalciteRawExecutor {
         planner.addRule(EnumerableRules.ENUMERABLE_LIMIT_RULE);
         planner.addRule(EnumerableRules.ENUMERABLE_JOIN_RULE);
         planner.addRule(EnumerableRules.ENUMERABLE_SORT_RULE);
-//        planner.addRule(EnumerableRules.ENUMERABLE_FILTER_RULE);
         planner.addRule(EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE);
         planner.addRule(EnumerableRules.ENUMERABLE_CALC_RULE);
-//        planner.addRule(EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE);
-//        planner.addRule(EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE);
     }
     
     /**
@@ -131,14 +131,30 @@ public final class CalciteRawExecutor {
      * @throws SqlParseException SQL parse exception
      */
     public Enumerable<Object[]> execute(final String sql) throws SqlParseException {
+        RelNode bestPlan = kernelProcess(sql);
+//        return executeEnumerableInterpretable(bestPlan);
+        return executeByCustomInterpretable(bestPlan);
+    }
+    
+    /**
+     * Optimize sql
+     *
+     * @param sql sql
+     * @return optimized sql
+     * @throws SqlParseException sql parse exception
+     */
+    public String optimize(final String sql) throws SqlParseException {
+        RelNode bestPlan = kernelProcess(sql);
+        return convertToSQL(bestPlan);
+    }
+    
+    private RelNode kernelProcess(final String sql) throws SqlParseException {
         SqlNode sqlNode = SqlParser.create(sql, parserConfig).parseQuery();
         SqlNode validNode = validator.validate(sqlNode);
         RelNode logicPlan = relConverter.convertQuery(validNode, false, true).rel;
 //        System.out.println(RelOptUtil.dumpPlan("[Logical plan]", logicPlan, SqlExplainFormat.TEXT, SqlExplainLevel.NON_COST_ATTRIBUTES));
-        RelNode bestPlan = optimize(logicPlan);
+        return optimize(logicPlan);
 //        System.out.println(RelOptUtil.dumpPlan("[Physical plan]", bestPlan, SqlExplainFormat.TEXT, SqlExplainLevel.NON_COST_ATTRIBUTES));
-//        return executeEnumerableInterpretable(bestPlan);
-        return executeByCustomInterpretable(bestPlan);
     }
     
     private RelNode optimize(final RelNode logicPlan) {
@@ -187,5 +203,17 @@ public final class CalciteRawExecutor {
                 return null;
             }
         };
+    }
+    
+    private String convertToSQL(final RelNode relNode) {
+        SqlDialect sqlDialect = createSqlDialect();
+        RelToSqlConverter converter = new RelToSqlConverter(sqlDialect);
+        SqlNode sqlNode = converter.visitRoot(relNode).asStatement();
+        return sqlNode.toSqlString(sqlDialect).getSql();
+    }
+    
+    private SqlDialect createSqlDialect() {
+        return new MysqlSqlDialect(SqlDialect.EMPTY_CONTEXT
+                .withDatabaseProductName("MYSQL").withDataTypeSystem(MysqlSqlDialect.MYSQL_TYPE_SYSTEM));
     }
 }

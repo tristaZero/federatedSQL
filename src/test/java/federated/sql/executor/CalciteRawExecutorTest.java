@@ -66,4 +66,11 @@ public final class CalciteRawExecutorTest {
         }
         assertThat(rowCount, is(2));
     }
+    
+    @Test
+    public void assertSingleOptimize() throws SqlParseException {
+        CalciteRawExecutor executor = new CalciteRawExecutor((properties));
+        String sql = executor.optimize(testSQL);
+        System.out.println(sql);
+    }
 }
