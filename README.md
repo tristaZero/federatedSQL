@@ -81,7 +81,7 @@ CREATE TABLE `t_order_1` (
 ) ENGINE=InnoDB;
 
 INSERT INTO t_order_1 SET order_id = 1, user_id = 1;
-INSERT INTO t_order_item_2 SET order_id = 1, user_id = 1, order_item_id = 1;
+INSERT INTO t_order_item_1 SET order_id = 1, user_id = 1, order_item_id = 1;
 ```
 3. Update configuration
 Update JdbcUrl, password, username with the properties of your database instance in `setUp()` of `CalciteRawExecutorTest` or `CalciteJDBCExecutorTest`
